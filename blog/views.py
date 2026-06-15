@@ -45,7 +45,8 @@ def home(request):
    # published_articles = Article.objects.filter(
    #    is_published=True
    # ).order_by('-published_date')[:10]
-   articles = Article.objects.filter(is_published=True)
+   # articles = Article.objects.filter(is_published=True).prefetch_related('tags')
+   articles = Article.objects.raw('SELECT * FROM blog_article WHERE is_published = %s', [True])
    return render(request, 'blog/home.html', {
       'articles': articles
    })
