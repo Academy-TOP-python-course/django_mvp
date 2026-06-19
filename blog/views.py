@@ -46,7 +46,18 @@ def home(request):
    #    is_published=True
    # ).order_by('-published_date')[:10]
    # articles = Article.objects.filter(is_published=True).prefetch_related('tags')
-   articles = Article.objects.raw('SELECT * FROM blog_article WHERE is_published = %s', [True])
+   # articles = Article.objects.raw('SELECT * FROM blog_article WHERE is_published = %s', [True])
+   # return render(request, 'blog/home.html', {
+   #    'articles': articles
+   # })
+   articles = Article.objects.filter(
+      is_published=True
+   ).select_related(
+      'author'
+   ).prefetch_related(
+      'tags'
+   ).order_by('-published_date')[:20]
+
    return render(request, 'blog/home.html', {
       'articles': articles
    })
