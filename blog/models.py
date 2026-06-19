@@ -2,6 +2,16 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 
+class ArticleQuerySet(models.QuerySet):
+    def published(self):
+        return self.filter(is_published=True)
+
+    def with_author_and_tags(self):
+        return self.select_related('author').prefetch_related('tags')
+
+    def recent_first(self):
+        return self.order_by('-published_date')
+
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
@@ -24,6 +34,8 @@ class Article(models.Model):
     tags = models.ManyToManyField(Tag, related_name='articles', blank=True)
     published_date = models.DateTimeField(auto_now_add=True)
     is_published = models.BooleanField(default=False)
+
+    objects = ArticleQuerySet.as_manager()
 
     class Meta:
         ordering = ['-published_date']

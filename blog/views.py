@@ -50,15 +50,39 @@ def home(request):
    # return render(request, 'blog/home.html', {
    #    'articles': articles
    # })
-   articles = Article.objects.filter(
-      is_published=True
-   ).select_related(
-      'author'
-   ).prefetch_related(
-      'tags'
-   ).order_by('-published_date')[:20]
+
+   # articles = Article.objects.filter(
+   #    is_published=True
+   # ).select_related(
+   #    'author'
+   # ).prefetch_related(
+   #    'tags'
+   # ).order_by('-published_date')[:20]
+
+   articles = Article.objects.published().with_author_and_tags().recent_first()[:20]
 
    return render(request, 'blog/home.html', {
       'articles': articles
    })
 
+
+def article_detail(request, article_id):
+   article = get_object_or_404(
+      Article.objects.published().with_author_and_tags(),
+      id=article_id
+   )
+
+
+   # Находим похожие статьи по тегам
+   related_articles = Article.objects.published().filter(
+      tags__in=article.tags.all()
+   ).exclude(
+      id=article.id
+   ).annotate(
+      same_tags=Count('id')
+   ).order_by('-same_tags', '-published_date').with_author_and_tags()[:5]
+
+   return render(request, 'blog/article_detail.html', {
+      'article': article,
+      'related_articles': related_articles
+   })
