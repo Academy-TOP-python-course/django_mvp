@@ -2,6 +2,14 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    class Meta:
+        abstract = True
+
 class ArticleQuerySet(models.QuerySet):
     def published(self):
         return self.filter(is_published=True)
@@ -27,7 +35,7 @@ class Tag(models.Model):
 User = get_user_model()
 
 
-class Article(models.Model):
+class Article(TimeStampedModel):
     title = models.CharField(max_length=200)
     content = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles', verbose_name='Автор')
@@ -36,6 +44,9 @@ class Article(models.Model):
     is_published = models.BooleanField(default=False)
 
     objects = ArticleQuerySet.as_manager()
+
+    def __str__(self):
+        return self.title
 
     class Meta:
         ordering = ['-published_date']

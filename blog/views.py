@@ -1,9 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 from django.http import HttpResponse
 
 from blog.models import Article
-
+from django.db.models import Count, Avg, Q
+from django.contrib.auth.models import User
+from django.db.models.functions import Length
 
 def home(request):
    # html_content = """
@@ -71,8 +73,6 @@ def article_detail(request, article_id):
       Article.objects.published().with_author_and_tags(),
       id=article_id
    )
-
-
    # Находим похожие статьи по тегам
    related_articles = Article.objects.published().filter(
       tags__in=article.tags.all()
@@ -85,4 +85,33 @@ def article_detail(request, article_id):
    return render(request, 'blog/article_detail.html', {
       'article': article,
       'related_articles': related_articles
+   })
+
+
+def authors_stats(request):
+   authors = User.objects.annotate(
+      total_articles=Count('articles', filter=Q(articles__is_published=True)),
+      avg_content_length=Avg(Length('articles__content'), filter=Q(articles__is_published=True)),
+      total_tags=Count('articles__tags', distinct=True, filter=Q(articles__is_published=True))
+   ).filter(
+      total_articles__gt=0
+   ).order_by('-total_articles')
+
+   return render(request, 'blog/authors_stats.html', {
+      'authors': authors
+   })
+
+
+def search(request):
+   query = request.GET.get('q', '')
+   if query:
+      articles = Article.objects.published().filter(
+         Q(title__icontains=query) | Q(content__icontains=query) | Q(tags__name__icontains=query)
+      ).distinct().with_author_and_tags().recent_first()[:50]
+   else:
+      articles = Article.objects.none()
+
+   return render(request, 'blog/search.html', {
+      'articles': articles,
+      'query': query
    })
